@@ -30,10 +30,10 @@ index 09250a8..2549e59 100644
              GlobalWidgetsLocalizations.delegate,
 diff --git a/flutter/lib/matix_update.dart b/flutter/lib/matix_update.dart
 new file mode 100644
-index 0000000..61bef03
+index 0000000..a2ccd3f
 --- /dev/null
 +++ b/flutter/lib/matix_update.dart
-@@ -0,0 +1,124 @@
+@@ -0,0 +1,130 @@
 +// MatixBridge forced update. The app asks agents.matix.one/bridge/config.json for "minAppBuild";
 +// when its own build is older, the main window is replaced by one screen with a big Update
 +// button (the download page). Agents' web client refuses older builds too, so support cannot
@@ -97,8 +97,11 @@ index 0000000..61bef03
 +
 +  @override
 +  Widget build(BuildContext context) {
++    // Noto Kufi Arabic, bundled with the app (declared in pubspec.yaml by cm-window.patch).
 +    return Scaffold(
-+      body: Center(
++      body: DefaultTextStyle.merge(
++        style: const TextStyle(fontFamily: 'NotoKufiArabic'),
++        child: Center(
 +        child: SingleChildScrollView(
 +          padding: const EdgeInsets.all(24),
 +          child: ConstrainedBox(
@@ -142,7 +145,9 @@ index 0000000..61bef03
 +                        mode: LaunchMode.externalApplication),
 +                    child: const Text('تحديث الآن  /  Update now',
 +                        style: TextStyle(
-+                            fontSize: 24, fontWeight: FontWeight.bold)),
++                            fontFamily: 'NotoKufiArabic',
++                            fontSize: 24,
++                            fontWeight: FontWeight.bold)),
 +                  ),
 +                ),
 +                const SizedBox(height: 14),
@@ -154,6 +159,7 @@ index 0000000..61bef03
 +            ),
 +          ),
 +        ),
++      ),
 +      ),
 +    );
 +  }
