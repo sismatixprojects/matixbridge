@@ -46,7 +46,10 @@ try {
   if (process.env.VOICE) {
     // Rings the customer's app (its accept-call prompt); for the package check's screenshot.
     session.on("voiceCall", (s) => console.log("voice call:", s));
+    // After the app's own minimise-after-login (3 s), like an agent who calls a little later.
+    await new Promise((r) => setTimeout(r, 6000));
     session.requestVoiceCall();
+    console.log("voice call requested");
   }
   if (process.env.CONTROLS) {
     // Exercise the More-menu controls and print what the peer answers.
