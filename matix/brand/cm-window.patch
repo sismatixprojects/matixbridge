@@ -14,7 +14,7 @@ index ed14e34..8d908a7 100644
  const Duration kTabTransitionDuration = Duration.zero;
  const double kEmptyMarginTop = 50;
 diff --git a/flutter/lib/desktop/pages/server_page.dart b/flutter/lib/desktop/pages/server_page.dart
-index eeb51b6..59c5533 100644
+index eeb51b6..a63c943 100644
 --- a/flutter/lib/desktop/pages/server_page.dart
 +++ b/flutter/lib/desktop/pages/server_page.dart
 @@ -362,7 +362,10 @@ class ConnectionManagerState extends State<ConnectionManager>
@@ -214,37 +214,68 @@ index eeb51b6..59c5533 100644
            child: buildButton(context, color: Colors.green[700], onClick: () {
              handleAccept(context);
              handleElevate(context);
-@@ -1106,13 +1105,15 @@ class _CmControlPanel extends StatelessWidget {
-                   children: [
-                     buildButton(
-                       context,
+@@ -1097,37 +1096,29 @@ class _CmControlPanel extends StatelessWidget {
+               textColor: Colors.white,
+               tooltip: 'accept_and_elevate_btn_tooltip'),
+         ),
+-        Row(
+-          mainAxisAlignment: MainAxisAlignment.center,
+-          children: [
+-            if (showAccept)
+-              Expanded(
+-                child: Column(
+-                  children: [
+-                    buildButton(
+-                      context,
 -                      color: MyTheme.accent,
-+                      color: Colors.green[700],
-                       onClick: () {
-                         handleAccept(context);
-                         windowManager.minimize();
-                       },
+-                      onClick: () {
+-                        handleAccept(context);
+-                        windowManager.minimize();
+-                      },
 -                      text: 'Accept',
-+                      text: 'قبول  /  Accept',
-                       textColor: Colors.white,
-+                      height: 72,
-+                      fontSize: 26,
-                     ),
-                   ],
-                 ),
-@@ -1123,8 +1124,10 @@ class _CmControlPanel extends StatelessWidget {
-                 color: Colors.transparent,
-                 border: Border.all(color: Colors.grey),
-                 onClick: handleDisconnect,
+-                      textColor: Colors.white,
+-                    ),
+-                  ],
+-                ),
+-              ),
+-            Expanded(
+-              child: buildButton(
+-                context,
+-                color: Colors.transparent,
+-                border: Border.all(color: Colors.grey),
+-                onClick: handleDisconnect,
 -                text: 'Cancel',
-+                text: 'رفض  /  Decline',
-                 textColor: null,
-+                height: 40,
-+                fontSize: 15,
-               ),
-             ),
-           ],
-@@ -1141,27 +1144,34 @@ class _CmControlPanel extends StatelessWidget {
+-                textColor: null,
+-              ),
+-            ),
+-          ],
++        // MatixBridge: Accept takes the full width (one line in Noto Kufi), Decline below it.
++        if (showAccept)
++          buildButton(
++            context,
++            color: Colors.green[700],
++            onClick: () {
++              handleAccept(context);
++              windowManager.minimize();
++            },
++            text: 'قبول  /  Accept',
++            textColor: Colors.white,
++            height: 72,
++            fontSize: 26,
++          ),
++        buildButton(
++          context,
++          color: Colors.transparent,
++          border: Border.all(color: Colors.grey),
++          onClick: handleDisconnect,
++          text: 'رفض  /  Decline',
++          textColor: null,
++          height: 40,
++          fontSize: 15,
+         ),
+       ],
+     ).marginOnly(bottom: buttonBottomMargin);
+@@ -1141,27 +1132,34 @@ class _CmControlPanel extends StatelessWidget {
        required String text,
        required Color? textColor,
        String? tooltip,
@@ -283,7 +314,7 @@ index eeb51b6..59c5533 100644
        decoration: BoxDecoration(
            color: color, borderRadius: borderRadius, border: border),
        child: InkWell(
-@@ -1464,3 +1474,19 @@ class __FileTransferLogPageState extends State<_FileTransferLogPage> {
+@@ -1464,3 +1462,19 @@ class __FileTransferLogPageState extends State<_FileTransferLogPage> {
      );
    }
  }
