@@ -26,7 +26,7 @@ session
     console.log(wrong ? "wrong password" : "password required");
     process.exit(3);
   })
-  .on("ready", (pi) => console.log("ready:", JSON.stringify({ host: pi.hostname, user: pi.username, platform: pi.platform, version: pi.version, displays: pi.displays.map((d) => `${d.width}x${d.height}@${d.x},${d.y}`) })))
+  .on("ready", (pi) => console.log("ready:", JSON.stringify({ host: pi.hostname, user: pi.username, platform: pi.platform, version: pi.version, matix_build: JSON.parse(pi.platform_additions || "{}").matix_build ?? null, displays: pi.displays.map((d) => `${d.width}x${d.height}@${d.x},${d.y}`) })))
   .on("video", (fs) => {
     for (const f of fs) {
       frames++;
