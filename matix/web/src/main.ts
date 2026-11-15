@@ -851,7 +851,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
 }
 
 // ---------- address book ----------
-// Signed in (team mode): the team's shared list from agents.matix.one; pins stay per browser.
+// Signed in (team mode): the agent's own list from agents.matix.one; pins stay per browser.
 // Otherwise: the list kept in this browser.
 function addressBookPanel(pick: (id: string) => void, start: (id: string, filesOnly: boolean) => void): HTMLElement {
   const teamMode = team.signedIn;
@@ -865,7 +865,7 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
   const menu = h("div", { class: "book-menu hidden" });
   const exp = h("button", { type: "button" }, t("Export to file"));
   const imp = h("button", { type: "button" }, t("Import from file"));
-  const share = h("button", { type: "button" }, t("Add this browser's devices to the team list"));
+  const share = h("button", { type: "button" }, t("Add this browser's devices to my list"));
   const file = h("input", { type: "file", accept: ".json,application/json" }) as HTMLInputElement;
   file.style.display = "none";
   menu.append(exp);
@@ -918,11 +918,11 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
   share.onclick = async () => {
     const have = new Set((teamList || []).map((d) => d.id));
     const mine = book.all().filter((d) => !have.has(d.id));
-    if (!mine.length) return toast(t("Every device in this browser is already in the team list."));
-    if (!window.confirm(t("Add {devices} from this browser to the team list?", { devices: nDevices(mine.length) }))) return;
+    if (!mine.length) return toast(t("Every device in this browser is already in your list."));
+    if (!window.confirm(t("Add {devices} from this browser to your list?", { devices: nDevices(mine.length) }))) return;
     try {
       for (const d of mine) await team.save(d.id, { name: d.name || d.host });
-      toast(t("Added {devices} to the team list.", { devices: nDevices(mine.length) }));
+      toast(t("Added {devices} to your list.", { devices: nDevices(mine.length) }));
     } catch (e) {
       fail(e);
     }
@@ -946,11 +946,11 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
     const av = h("span", { class: "book-av" }, letter);
     av.style.background = `hsl(${hue} 55% 38%)`;
     const nameEl = h("b", { class: "book-name" }, displayName(d));
-    const seen = d.last ? (td?.last_agent ? t("{when} by {agent}", { when: timeAgo(d.last), agent: td.last_agent }) : timeAgo(d.last)) : t("not connected yet");
+    const seen = d.last ? timeAgo(d.last) : t("not connected yet");
     const meta = [td?.client_name || "", d.host && d.name ? d.host : "", osLabel(d.platform), seen].filter(Boolean).join(" · ");
     const star = h("button", { class: "icon-btn" + (d.fav ? " on" : ""), type: "button", title: d.fav ? t("Unpin") : t("Pin to top (this browser)") }, d.fav ? "★" : "☆");
     const edit = h("button", { class: "icon-btn", type: "button", title: t("Rename") }, "✎");
-    const del = h("button", { class: "icon-btn", type: "button", title: teamMode ? t("Remove from the team list") : t("Remove") }, "🗑");
+    const del = h("button", { class: "icon-btn", type: "button", title: t("Remove") }, "🗑");
     const files = h("button", { class: "icon-btn", type: "button", title: t("File transfer") }, "📁");
     const connect = h("button", { class: "btn primary", type: "button" }, t("Connect"));
     star.onclick = (e) => {
@@ -968,8 +968,7 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
     };
     del.onclick = async (e) => {
       e.stopPropagation();
-      const ask = teamMode ? "Remove {name} ({id}) from the team list (for everyone)?" : "Remove {name} ({id}) from your devices?";
-      if (!window.confirm(t(ask, { name: displayName(d), id: formatId(d.id) }))) return;
+      if (!window.confirm(t("Remove {name} ({id}) from your devices?", { name: displayName(d), id: formatId(d.id) }))) return;
       if (teamMode) await team.remove(d.id).catch(fail);
       book.remove(d.id);
       void refresh();
@@ -982,9 +981,7 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
       e.stopPropagation();
       start(d.id, false);
     };
-    const actions = h("div", { class: "book-actions" }, star, edit, files);
-    if (!teamMode || team.canDelete) actions.append(del);
-    actions.append(connect);
+    const actions = h("div", { class: "book-actions" }, star, edit, files, del, connect);
     const li = h(
       "li",
       { class: "book-item", title: td?.notes || t("Click to fill the ID") },
@@ -1010,21 +1007,19 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
     const shown = all.filter(hit);
     count.textContent = all.length ? String(all.length) : "";
     list.replaceChildren(...shown.map(card));
-    if (teamMode && !teamList) list.append(h("li", { class: "book-empty" }, teamError || t("Loading the team list…")));
+    if (teamMode && !teamList) list.append(h("li", { class: "book-empty" }, teamError || t("Loading your list…")));
     else if (!all.length)
       list.append(h("li", { class: "book-empty" }, t("Devices you connect to appear here, so you can reconnect in one click. Click the device name during a session to label it.")));
     else if (!shown.length) list.append(h("li", { class: "book-empty" }, t("No device matches your search.")));
   }
   void refresh();
   const hint = teamMode
-    ? team.org
-      ? t("Shared with your team at {org}. Pins (★) are kept in this browser.", { org: team.org.name })
-      : t("Shared with your team. Pins (★) are kept in this browser.")
+    ? t("Only you see this list, on any computer you sign in from. Pins (★) are kept in this browser.")
     : t("Saved in this browser only. Use ⋯ › Export to move the list to another computer.");
   return h(
     "section",
     { class: "card book" },
-    h("div", { class: "book-head" }, h("h2", {}, t(teamMode ? "Team devices" : "Customer devices"), " ", count), h("div", { class: "book-tools" }, addBtn, h("div", { class: "book-menu-wrap" }, menuBtn, menu))),
+    h("div", { class: "book-head" }, h("h2", {}, t(teamMode ? "My devices" : "Customer devices"), " ", count), h("div", { class: "book-tools" }, addBtn, h("div", { class: "book-menu-wrap" }, menuBtn, menu))),
     search,
     list,
     file,

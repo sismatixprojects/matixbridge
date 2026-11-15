@@ -133,9 +133,6 @@ export const team = {
   get org() {
     return state?.org || null;
   },
-  get canDelete() {
-    return state?.agent.role === "admin" || state?.agent.role === "supervisor";
-  },
   onChange(f: () => void) {
     listeners.add(f);
     return () => listeners.delete(f);
