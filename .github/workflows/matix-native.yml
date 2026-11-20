@@ -1,6 +1,6 @@
 name: MatixBridge native apps
 
-# Builds the branded customer apps (Windows, macOS, Android, iOS) with our server and key
+# Builds the branded customer apps (Windows, macOS, Android, iOS, Linux deb) with our server and key
 # baked in, using RustDesk's own build workflow. Needs repository variables MATIX_KG_HOST and
 # MATIX_KG_KEY (Settings > Secrets and variables > Actions > Variables).
 
@@ -11,6 +11,11 @@ on:
         description: "Release tag for the build"
         default: "matixbridge-nightly"
         required: true
+      platforms:
+        description: "all, or linux to add only the Linux deb to an existing release (its other files are left alone)"
+        type: choice
+        options: [all, linux]
+        default: all
 
 permissions:
   contents: write
@@ -34,6 +39,7 @@ jobs:
       upload-artifact: true
       upload-tag: ${{ inputs.tag }}
       matix-kg: true
+      matix-linux-only: ${{ inputs.platforms == 'linux' }}
 
   rename:
     # RustDesk's jobs name the files rustdesk-*; give customers MatixBridge-* names.

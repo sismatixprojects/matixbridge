@@ -169,7 +169,16 @@ To build:
 2. Run **Actions › MatixBridge native apps**.
 
 That workflow calls RustDesk's own `flutter-build.yml` with `matix-kg: true`. This applies the
-branding and skips the Linux and Sciter jobs. The workflow then renames the release files to `MatixBridge-*`.
+branding and skips the Sciter, rpm, Arch, AppImage and Flatpak packages. The workflow then renames the
+release files to `MatixBridge-*`.
+
+**Linux (Ubuntu/Debian `.deb`, since 2026-11-20).** The Linux code derives its service, tray and
+autostart names from the lowercased app name (`systemctl enable matixbridge`, `matixbridge --tray`), so
+`matix/brand/apply-linux.sh` renames what the deb installs to match: package `matixbridge`,
+`/usr/share/matixbridge/matixbridge`, `/usr/bin/matixbridge`, `matixbridge.service`, `matixbridge.desktop`.
+The file itself is still built as `rustdesk-<ver>-x86_64.deb` and renamed like the others. To add only the
+deb to an existing release, run the workflow with **platforms: linux** and that release's tag (the tag
+sets the build number, so use the release's own `matixbridge-vN.M`, never a new name).
 
 **Signing:**
 
