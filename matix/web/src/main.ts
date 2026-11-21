@@ -64,6 +64,8 @@ function tb(name: string, label: string, title = label) {
 
 const toasts = h("div", { class: "toasts" });
 document.body.append(toasts);
+// Only the full-screen element is drawn in full screen, so the toasts move into it and back.
+document.addEventListener("fullscreenchange", () => (document.fullscreenElement || document.body).append(toasts));
 function toast(text: string, err = false, ms = 4000) {
   const t = h("div", { class: "toast" + (err ? " err" : "") }, text);
   toasts.append(t);
@@ -336,7 +338,10 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   bClose.classList.add("danger");
 
   const toolbar = h("div", { class: "toolbar" }, h("div", { class: "tb-brand", title: "MatixBridge by Matix" }, h("img", { src: "./favicon.svg", alt: "MatixBridge" })), title, bDisplay, bQuality, bView, bCad, bLock, bRefresh, bType, bClip, moreWrap, h("div", { class: "spacer" }), bCall, bChat, bFiles, bRec, bFull, bClose);
-  const root = h("div", { class: "session" }, toolbar, h("div", { class: "body" }, stage, drawerHost));
+  // In full screen the toolbar hides so the customer's screen fills the display; this tab and the
+  // top edge bring it back.
+  const fsHandle = h("button", { class: "fs-handle", type: "button", title: t("Show the toolbar") }, "▾");
+  const root = h("div", { class: "session" }, toolbar, fsHandle, h("div", { class: "body" }, stage, drawerHost));
   app.append(root);
   statusBox(overlay, t("Connecting…"));
 
@@ -547,6 +552,41 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     const kb = (navigator as unknown as { keyboard?: { lock?: () => Promise<void> } }).keyboard;
     await kb?.lock?.().catch(() => {});
   };
+
+  // ---- full screen: auto-hiding toolbar ----
+  let tbHideTimer = 0;
+  const isFull = () => document.fullscreenElement === root;
+  const showToolbar = (ms = 0) => {
+    window.clearTimeout(tbHideTimer);
+    root.classList.add("tb-show");
+    if (ms) tbHideTimer = window.setTimeout(hideToolbar, ms);
+  };
+  // Stays up while the pointer or keyboard focus is in it, or a menu / dropdown of it is open.
+  const hideToolbar = () => {
+    if (!isFull() || toolbar.matches(":hover, :focus-within") || !moreMenu.classList.contains("hidden")) return;
+    root.classList.remove("tb-show");
+  };
+  root.addEventListener("mousemove", (e) => {
+    if (isFull() && e.clientY <= 3) showToolbar();
+  });
+  toolbar.addEventListener("mouseleave", () => {
+    window.clearTimeout(tbHideTimer);
+    tbHideTimer = window.setTimeout(hideToolbar, 600);
+  });
+  fsHandle.onclick = () => showToolbar(4000);
+  fsHandle.onmouseenter = () => showToolbar();
+  document.addEventListener("fullscreenchange", () => {
+    const full = isFull();
+    bFull.title = full ? t("Exit full screen") : t("Full screen");
+    if (full) {
+      showToolbar(2500);
+      toast(t("Full screen: move the mouse to the top edge to show the toolbar."));
+    } else {
+      window.clearTimeout(tbHideTimer);
+      root.classList.remove("tb-show");
+    }
+    canvas.focus();
+  });
 
   // ---- more controls: sound, block input, privacy mode, elevation, restart ----
   const audio = new AudioPlayer();
