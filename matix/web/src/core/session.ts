@@ -37,10 +37,21 @@ export interface EncodedFrame {
   display: number;
 }
 
+/**
+ * A password saved with a device in the agent's machines list: the device's salt and
+ * sha256(password + salt), the value RustDesk's login is built from (never the password itself).
+ */
+export interface SavedPassword {
+  salt: string;
+  hash: string;
+}
+
 export interface SessionEvents {
   status: (text: string) => void;
   /** The peer is waiting for a password (or the first one was wrong). */
   password: (wrong: boolean) => void;
+  /** The saved password was not accepted (changed, or the device's salt changed); forget it. */
+  savedRejected: () => void;
   ready: (info: M.PeerInfo) => void;
   video: (frames: EncodedFrame[]) => void;
   cursorData: (c: { id: string; hotx: number; hoty: number; width: number; height: number; rgba: Uint8Array }) => void;
@@ -81,6 +92,8 @@ export class Session {
   private listeners: { [K in keyof SessionEvents]?: Listener<K>[] } = {};
   private hash: M.IHash | undefined;
   private saltedPassword: Uint8Array | undefined;
+  private savedPw: SavedPassword | undefined;
+  private usingSaved = false;
   private loggedIn = false;
   private voiceTs = 0;
   private closedFlag = false;
@@ -101,7 +114,7 @@ export class Session {
   }
 
   /** Connects and logs in. Resolves once the session is streaming; rejects on failure. */
-  async connect(password?: string): Promise<void> {
+  async connect(password?: string, saved?: SavedPassword): Promise<void> {
     await crypto.ready();
     const serverKey = crypto.fromBase64(this.server.key);
     this.emit("status", "Contacting the ID server…");
@@ -124,6 +137,7 @@ export class Session {
     await this.secure(relay, rr.pk, serverKey);
     this.emit("status", "Waiting for the remote side…");
     if (password) this.pendingPassword = password;
+    else if (saved) this.savedPw = saved;
     relay.setHandler((bytes) => this.onMessage(bytes));
     await this.loginDone;
   }
@@ -237,6 +251,13 @@ export class Session {
         if (this.pendingPassword) {
           this.saltedPassword = crypto.sha256(this.pendingPassword, this.hash.salt || "");
           this.pendingPassword = undefined;
+        } else if (this.savedPw) {
+          // Valid only for the salt it was made with; a device that changed it gets the prompt.
+          if (this.savedPw.salt === (this.hash.salt || "")) {
+            this.saltedPassword = crypto.fromBase64(this.savedPw.hash);
+            this.usingSaved = true;
+          } else this.emit("savedRejected");
+          this.savedPw = undefined;
         }
         this.sendLogin();
         if (!this.saltedPassword) this.emit("status", "Waiting for the customer to accept…");
@@ -247,6 +268,11 @@ export class Session {
           if (/password/i.test(r.error) && !/many|attempt/i.test(r.error)) {
             const wrong = /wrong/i.test(r.error);
             this.saltedPassword = undefined;
+            // Tried once; never again automatically (the device locks out after repeated failures).
+            if (this.usingSaved) {
+              this.usingSaved = false;
+              this.emit("savedRejected");
+            }
             this.emit("password", wrong);
             this.emit("status", wrong ? "Wrong password" : "Password required");
           } else {
@@ -383,10 +409,17 @@ export class Session {
     this.channel?.send(M.Message.encode(msg).finish());
   }
 
+  /** What to save with the device after a password login; undefined if no password was used. */
+  credential(): SavedPassword | undefined {
+    if (!this.loggedIn || !this.saltedPassword || !this.hash) return undefined;
+    return { salt: this.hash.salt || "", hash: crypto.toBase64(this.saltedPassword) };
+  }
+
   /** Supplies (or re-supplies) the password after a `password` event. */
   login(password: string) {
     if (!this.hash) return;
     this.saltedPassword = crypto.sha256(password, this.hash.salt || "");
+    this.usingSaved = false;
     this.emit("status", "Logging in…");
     this.sendLogin();
   }

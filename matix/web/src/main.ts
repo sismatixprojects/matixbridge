@@ -1,6 +1,6 @@
 // MatixBridge web client: agent-side remote control in the browser.
 import { hbb as M } from "./proto/message.js";
-import { Session, type ServerConfig } from "./core/session";
+import { Session, type SavedPassword, type ServerConfig } from "./core/session";
 import { FileSession, type RemoteDir, type RemoteEntry } from "./core/files";
 import { VideoSink, webCodecsAvailable } from "./ui/video";
 import { mapKey, remoteOs, type RemoteOs } from "./ui/keymap";
@@ -149,6 +149,38 @@ async function loadConfig(): Promise<AppConfig> {
 // A ticket the agent came from (agents.matix.one "Remote control"): sessions to that device are
 // logged on it. Only set by a signed-in launch, never by a bare link.
 let launchTicket: { id: string; ticket: string } | null = null;
+
+// Passwords saved with devices in the signed-in agent's machines list (agents.matix.one keeps them,
+// encrypted, on the device's row). Filled whenever the list is loaded.
+const savedPws = new Map<string, SavedPassword>();
+function noteSaved(list: TeamDevice[]) {
+  savedPws.clear();
+  for (const d of list) if (d.pw) savedPws.set(d.id, d.pw);
+}
+const savedFor = (peer: string) => (team.signedIn ? savedPws.get(peer) : undefined);
+/** The device rejected its saved password: drop it from the list, so it is tried only once. */
+function forgetSaved(peer: string) {
+  if (!savedPws.delete(peer)) return;
+  team.save(peer, { pw: null }).catch(() => {});
+  toast(t("The saved password for this machine no longer works, so it was removed."), true, 6000);
+}
+/** After a password login, saves it with the device in the agent's list. */
+function rememberPw(peer: string, cred: SavedPassword | undefined) {
+  if (!cred || !team.signedIn) return;
+  team
+    .save(peer, { pw: cred })
+    .then(() => {
+      savedPws.set(peer, cred);
+      toast(t("Password saved with this machine."), false, 3000);
+    })
+    .catch((e) => toast(t("Could not save the password: {error}", { error: e instanceof Error ? e.message : String(e) }), true));
+}
+function rememberBox(): { el: HTMLElement; input: HTMLInputElement } {
+  const input = h("input", { type: "checkbox" }) as HTMLInputElement;
+  const el = h("label", { class: "remember" }, input, " " + t("Save the password with this machine in my list"));
+  if (!team.signedIn) el.style.display = "none";
+  return { el, input };
+}
 const ticketFor = (peer: string) => (launchTicket && launchTicket.id === peer ? launchTicket.ticket : undefined);
 const agentLabel = (typed: string) => typed || team.agent?.full_name || "Matix Support";
 
@@ -180,6 +212,12 @@ function connectScreen(cfg: ServerConfig, error = "") {
     go,
     err
   );
+  const remember = rememberBox();
+  form.insertBefore(remember.el, pw.nextSibling);
+  const pwHint = () => {
+    pw.placeholder = savedFor(id.value.replace(/\D/g, "")) ? t("A saved password will be used") : t("Leave empty to ask the customer to accept");
+  };
+  id.addEventListener("input", pwHint);
   const opts = h("label", {}, h("input", { type: "checkbox", id: "files-only" }), " " + t("Open file transfer only"));
   opts.style.display = "flex";
   opts.style.gap = "8px";
@@ -194,8 +232,9 @@ function connectScreen(cfg: ServerConfig, error = "") {
     }
     store.set("agent", agent.value.trim());
     const filesOnly = (document.getElementById("files-only") as HTMLInputElement).checked;
-    if (filesOnly) void filesScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()));
-    else void sessionScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()));
+    const save = remember.input.checked && !!pw.value;
+    if (filesOnly) void filesScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()), save);
+    else void sessionScreen(cfg, peer, pw.value, agentLabel(agent.value.trim()), save);
   };
   const start = (peer: string, filesOnly: boolean) => {
     id.value = formatId(peer);
@@ -204,6 +243,7 @@ function connectScreen(cfg: ServerConfig, error = "") {
   };
   const panel = addressBookPanel((peer) => {
     id.value = formatId(peer);
+    pwHint();
     pw.focus();
   }, start);
   app.append(h("div", { class: "connect" }, h("div", { class: "connect-grid" }, form, panel), h("div", { class: "footer" }, t("MatixBridge by Matix · Sismatix Information Systems · "), h("a", { href: "https://github.com/sismatixprojects/matixbridge", target: "_blank", rel: "noopener" }, t("based on RustDesk (AGPL-3.0)")))));
@@ -233,6 +273,7 @@ function teamBar(): HTMLElement {
   }
   const out = h("button", { class: "link-btn", type: "button" }, t("Sign out"));
   out.onclick = () => {
+    savedPws.clear();
     team.signOut();
     location.reload();
   };
@@ -254,9 +295,10 @@ async function connectError(e: unknown) {
 }
 
 // ---------- password prompt ----------
-function promptPassword(overlay: HTMLElement, wrong: boolean): Promise<string | null> {
+function promptPassword(overlay: HTMLElement, wrong: boolean): Promise<{ password: string; remember: boolean } | null> {
   return new Promise((resolve) => {
     const input = h("input", { class: "field", type: "password", placeholder: t("Password"), autocomplete: "off" });
+    const remember = rememberBox();
     const ok = h("button", { class: "btn primary", type: "submit" }, t("Log in"));
     const cancel = h("button", { class: "btn", type: "button" }, t("Cancel"));
     const form = h(
@@ -265,12 +307,13 @@ function promptPassword(overlay: HTMLElement, wrong: boolean): Promise<string | 
       h("h3", {}, wrong ? t("Wrong password") : t("Password required")),
       h("p", { class: "hint" }, t("Enter the password shown on the customer's computer.")),
       input,
+      remember.el,
       h("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:14px" }, cancel, ok)
     );
     form.onsubmit = (e) => {
       e.preventDefault();
       overlay.replaceChildren();
-      resolve(input.value);
+      resolve({ password: input.value, remember: remember.input.checked });
     };
     cancel.onclick = () => {
       overlay.replaceChildren();
@@ -288,7 +331,7 @@ function statusBox(overlay: HTMLElement, text: string, spinner = true) {
 }
 
 // ---------- remote session ----------
-async function sessionScreen(cfg: ServerConfig, peerId: string, password: string, agentName: string) {
+async function sessionScreen(cfg: ServerConfig, peerId: string, password: string, agentName: string, remember = false) {
   app.replaceChildren();
   const canvas = h("canvas", { tabindex: "0", width: "1280", height: "720" });
   const overlay = h("div", { class: "overlay" });
@@ -433,7 +476,10 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
           if (ended) void team.sessionEnd(sid);
           else teamSession = sid;
         })
-        .then(() => team.devices())
+        .then(() => {
+          if (remember) rememberPw(peerId, session.credential());
+          return team.devices();
+        })
         .then((list) => {
           const d = list.find((x) => x.id === peerId);
           if (d?.name && !ended) (title.firstChild as HTMLElement).textContent = `${d.name} · ${formatId(peerId)}`;
@@ -452,8 +498,12 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   session.on("password", async (wrong) => {
     const p = await promptPassword(overlay, wrong);
     if (p === null) session.close("Disconnected");
-    else session.login(p);
+    else {
+      remember = p.remember;
+      session.login(p.password);
+    }
   });
+  session.on("savedRejected", () => forgetSaved(peerId));
 
   // ---- chat ----
   const chatLog = h("div", { class: "chat-log" });
@@ -892,7 +942,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   }
 
   try {
-    await session.connect(password || undefined);
+    await session.connect(password || undefined, password ? undefined : savedFor(peerId));
   } catch (e) {
     if (!ended) {
       ended = true;
@@ -942,6 +992,7 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
     if (!teamMode) return render();
     try {
       teamList = await team.devices();
+      noteSaved(teamList);
       teamError = "";
     } catch (e) {
       teamError = e instanceof Error ? e.message : String(e);
@@ -1004,6 +1055,15 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
     const edit = h("button", { class: "icon-btn", type: "button", title: t("Rename") }, "✎");
     const del = h("button", { class: "icon-btn", type: "button", title: t("Remove") }, "🗑");
     const files = h("button", { class: "icon-btn", type: "button", title: t("File transfer") }, "📁");
+    const key = h("button", { class: "icon-btn on", type: "button", title: t("Saved password: click to forget it") }, "🔑");
+    if (!td?.pw) key.style.display = "none";
+    key.onclick = async (e) => {
+      e.stopPropagation();
+      if (!window.confirm(t("Forget the saved password for {name}?", { name: displayName(d) }))) return;
+      savedPws.delete(d.id);
+      await team.save(d.id, { pw: null }).catch(fail);
+      void refresh();
+    };
     const connect = h("button", { class: "btn primary", type: "button" }, t("Connect"));
     star.onclick = (e) => {
       e.stopPropagation();
@@ -1033,7 +1093,7 @@ function addressBookPanel(pick: (id: string) => void, start: (id: string, filesO
       e.stopPropagation();
       start(d.id, false);
     };
-    const actions = h("div", { class: "book-actions" }, star, edit, files, del, connect);
+    const actions = h("div", { class: "book-actions" }, key, star, edit, files, del, connect);
     const li = h(
       "li",
       { class: "book-item", title: td?.notes || t("Click to fill the ID") },
@@ -1092,7 +1152,7 @@ class FilesPanel {
   /** Set by the standalone file-transfer screen to log the session (not by the in-session panel). */
   onConnected?: (pi: { hostname?: string; username?: string; platform?: string } | undefined) => void;
 
-  constructor(private cfg: ServerConfig, private peerId: string, private password: string, private agentName: string, onClose: () => void) {
+  constructor(private cfg: ServerConfig, private peerId: string, private password: string, private agentName: string, onClose: () => void, private remember = false) {
     const up = h("button", { class: "btn", type: "button", title: t("Parent folder") }, "↑");
     const go = h("button", { class: "btn", type: "button" }, t("Go"));
     const x = h("button", { class: "x", type: "button", title: t("Close") }, "×");
@@ -1138,12 +1198,14 @@ class FilesPanel {
         if (p === null) fs.close();
         else fs.session.login(p);
       });
+      fs.session.on("savedRejected", () => forgetSaved(this.peerId));
       fs.session.on("closed", (r) => {
         this.status.textContent = t("File transfer closed: {reason}", { reason: t(r) });
         this.fs = undefined;
         this.connecting = undefined;
       });
-      await fs.connect(this.password || undefined);
+      await fs.connect(this.password || undefined, this.password ? undefined : savedFor(this.peerId));
+      if (this.remember) rememberPw(this.peerId, fs.session.credential());
       const pi = fs.session.peerInfo;
       if (pi && appBuild(pi) < minAppBuild) {
         fs.close();
@@ -1235,19 +1297,26 @@ class FilesPanel {
   }
 }
 
-async function filesScreen(cfg: ServerConfig, peerId: string, password: string, agentName: string) {
+async function filesScreen(cfg: ServerConfig, peerId: string, password: string, agentName: string, remember = false) {
   app.replaceChildren();
   let teamSession = 0;
   const endTeamSession = () => {
     if (teamSession) void team.sessionEnd(teamSession);
     teamSession = 0;
   };
-  const panel = new FilesPanel(cfg, peerId, password, agentName, () => {
-    endTeamSession();
-    window.removeEventListener("beforeunload", endTeamSession);
-    panel.close();
-    connectScreen(cfg);
-  });
+  const panel = new FilesPanel(
+    cfg,
+    peerId,
+    password,
+    agentName,
+    () => {
+      endTeamSession();
+      window.removeEventListener("beforeunload", endTeamSession);
+      panel.close();
+      connectScreen(cfg);
+    },
+    remember
+  );
   if (team.signedIn) {
     window.addEventListener("beforeunload", endTeamSession);
     panel.onConnected = (pi) => {

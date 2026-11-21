@@ -30,6 +30,11 @@ A browser can only be the controlling side. Customers run the MatixBridge app; a
   - The handshake **fails closed**: if the server's signature on the peer key does not
     verify, it refuses to connect. It never falls back to an unencrypted session.
   - Login works with a password, or with no password, in which case the customer clicks Accept.
+  - A signed-in agent can save a device's password with the device in their machines list
+    ("Save the password with this machine in my list"). agents.matix.one keeps sha256(password +
+    the device's salt), encrypted, on the agent's own row; never the password, and the ticket page
+    only sees that one is saved. That device then connects with the password field empty. A saved
+    password the device rejects is tried once and removed; 🔑 on the device forgets it.
 - `src/core/files.ts`: file transfer, over a second file-transfer connection as the native client does.
 - `src/ui/video.ts`: WebCodecs decoding of VP9/VP8/AV1/H.264.
 - `src/ui/keymap.ts`: physical-key ("map" mode) codes for Windows, macOS and Linux peers.

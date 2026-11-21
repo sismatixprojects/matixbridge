@@ -8,6 +8,7 @@
 // (it cannot call the rest of the agents API).
 
 import type { Device } from "./addressbook";
+import type { SavedPassword } from "../core/session";
 import { t } from "../i18n";
 
 export interface TeamAgent {
@@ -29,6 +30,8 @@ export interface TeamDevice extends Device {
   client_name: string | null;
   last_agent: string | null;
   notes: string;
+  /** The password saved with this device in the agent's own list (sent only for their own list). */
+  pw: SavedPassword | null;
 }
 
 const KEY = "matixbridge.team";
@@ -101,6 +104,7 @@ function toDevice(d: Record<string, unknown>): TeamDevice {
     client_name: (d.client_name as string) || null,
     last_agent: (d.last_agent as string) || null,
     notes: String(d.notes || ""),
+    pw: d.pw && typeof (d.pw as SavedPassword).hash === "string" ? { salt: String((d.pw as SavedPassword).salt || ""), hash: (d.pw as SavedPassword).hash } : null,
   };
 }
 
@@ -164,7 +168,7 @@ export const team = {
     const j = await call<{ devices: Record<string, unknown>[] }>("GET", "/devices");
     return j.devices.map(toDevice);
   },
-  async save(id: string, patch: { name?: string; notes?: string }): Promise<TeamDevice> {
+  async save(id: string, patch: { name?: string; notes?: string; pw?: SavedPassword | null }): Promise<TeamDevice> {
     const j = await call<{ device: Record<string, unknown> }>("PUT", `/devices/${encodeURIComponent(id)}`, patch);
     return toDevice(j.device);
   },
