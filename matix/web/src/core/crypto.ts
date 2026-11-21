@@ -19,6 +19,10 @@ export function fromBase64(text: string): Uint8Array {
   return lib().from_base64(text.trim(), lib().base64_variants.ORIGINAL);
 }
 
+export function toBase64(bytes: Uint8Array): string {
+  return lib().to_base64(bytes, lib().base64_variants.ORIGINAL);
+}
+
 /** Verifies an ed25519 signed message and returns its payload; throws if the signature is bad. */
 export function signOpen(signed: Uint8Array, publicKey: Uint8Array): Uint8Array {
   return lib().crypto_sign_open(signed, publicKey);

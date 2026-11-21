@@ -1,5 +1,6 @@
 // Address book: customer devices this agent has connected to, kept in this browser.
-// No passwords are stored; reconnecting asks the customer to accept (or for the password) again.
+// No passwords are stored here. Signed-in agents can save a device's password with the device in
+// their machines list on agents.matix.one (see savedPws in main.ts); this per-browser book never holds one.
 import { t } from "../i18n";
 
 export interface Device {

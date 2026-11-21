@@ -1,7 +1,7 @@
 // File transfer over a dedicated file-transfer session (LoginRequest.file_transfer), as the
 // native client does. Protocol: RustDesk libs/base/src/fs.rs + src/server/connection.rs.
 import { hbb as M } from "../proto/message.js";
-import { Session, type ServerConfig } from "./session";
+import { Session, type ServerConfig, type SavedPassword } from "./session";
 import { decompress } from "./zstd";
 import { t } from "../i18n";
 
@@ -61,8 +61,8 @@ export class FileSession {
     this.session.on("fileAction", (a) => this.onAction(a));
   }
 
-  async connect(password?: string) {
-    await this.session.connect(password);
+  async connect(password?: string, saved?: SavedPassword) {
+    await this.session.connect(password, saved);
     const pi = this.session.peerInfo;
     this.separator = (pi?.platform || "").toLowerCase().startsWith("win") ? "\\" : "/";
   }

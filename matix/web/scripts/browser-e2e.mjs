@@ -10,6 +10,8 @@ const { URL: url, ID: id, PASSWORD: password, SHOT_DIR: shots = "." } = process.
 // are tested in the agents.matix.one repo; this checks the web client's side of the contract.
 const calls = [];
 let teamApi;
+// The machines list's saved password for the peer (PUT /devices/:id { pw }), returned by GET /devices.
+let savedPw = null;
 if (process.env.TEAM_API_PORT) {
   teamApi = http.createServer((req, res) => {
     const cors = { "Access-Control-Allow-Origin": req.headers.origin || "*", "Access-Control-Allow-Headers": "Content-Type, Authorization", "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE" };
@@ -25,7 +27,11 @@ if (process.env.TEAM_API_PORT) {
       if (path === "/auth/exchange") return json?.code === "ci-code" ? send({ success: true, token: "ci-token", expires_in: 3600, agent: { id: 1, username: "ci", full_name: "CI Agent", role: "agent" }, org: { id: 1, name: "CI Org" } }) : send({ success: false, message: "expired" }, 401);
       if (req.headers.authorization !== "Bearer ci-token") return send({ success: false }, 401);
       if (path === "/me") return send({ success: true, agent: { id: 1, username: "ci", full_name: "CI Agent", role: "agent" }, org: { id: 1, name: "CI Org" } });
-      if (path === "/devices") return send({ success: true, devices: [] });
+      if (path === "/devices") return send({ success: true, devices: savedPw ? [{ id, name: "", host: "ci", pw: savedPw, has_pw: true }] : [] });
+      if (req.method === "PUT" && path === `/devices/${id}`) {
+        if (json && "pw" in json) savedPw = json.pw;
+        return send({ success: true, device: { id, name: "", pw: savedPw, has_pw: !!savedPw } });
+      }
       if (path === "/sessions") return send({ success: true, session_id: 7, device: { id: json.device_id, name: "", host: json.host } });
       if (path === "/sessions/7/end") return send({ success: true });
       send({ success: false, message: "not found" }, 404);
@@ -153,6 +159,57 @@ try {
   if (!saved || !saved.host) throw new Error("The connected device was not saved to the address book");
   console.log("BROWSER E2E OK");
 
+  if (teamApi) {
+    // Runs here, before the forced-update and ticket-launch steps: the ticket launch right after the
+    // forced-update refusal is flaky on its own (the peer sometimes does not answer it for 30 s).
+    // Saved password: connect once with the password and "save it with this machine"; then the
+    // password field can stay empty. The peer accepts passwords only (approve-mode = password), so
+    // a login with an empty field can only come from the saved one.
+    calls.length = 0;
+    await page.goto("about:blank");
+    await page.goto(url);
+    await page.fill("#peer-id", id);
+    await page.fill("#peer-pw", password);
+    await page.check("label.remember input");
+    await page.click("form.card button[type=submit]");
+    await waitFor(() => calls.some((c) => c.method === "PUT" && c.path === `/devices/${id}` && c.body?.pw), 45000, "the password to be saved with the device");
+    const put = calls.find((c) => c.method === "PUT" && c.body?.pw).body.pw;
+    console.log("saved with the device:", JSON.stringify({ salt: put.salt.length, hash: put.hash.length }));
+    if (!/^[A-Za-z0-9+/]{43}=$/.test(put.hash) || put.hash.includes(password)) throw new Error("What was saved is not a salted hash");
+    await page.click('button[title="Disconnect"]');
+    await page.waitForSelector("#peer-id", { timeout: 10000 });
+  
+    calls.length = 0;
+    await page.goto("about:blank");
+    await page.goto(url);
+    await page.waitForSelector('.book-item button[title="Saved password: click to forget it"]', { timeout: 15000 });
+    await page.fill("#peer-id", id);
+    if ((await page.inputValue("#peer-pw")) !== "") throw new Error("The password field is not empty");
+    await page.click("form.card button[type=submit]");
+    await waitFor(() => calls.some((c) => c.path === "/sessions"), 45000, "a login with the saved password");
+    await page.waitForFunction(() => {
+      const c = document.querySelector("canvas");
+      return c && c.width >= 100;
+    }, null, { timeout: 45000 });
+    if (await page.isVisible("text=Password required")) throw new Error("Asked for the password although one is saved");
+    console.log("logged in with the saved password, nothing typed");
+    await page.click('button[title="Disconnect"]');
+    await page.waitForSelector("#peer-id", { timeout: 10000 });
+  
+    // A saved password the device no longer accepts: asked once, and it is removed from the list.
+    savedPw = { ...savedPw, hash: "A".repeat(43) + "=" };
+    calls.length = 0;
+    await page.goto("about:blank");
+    await page.goto(url);
+    await page.waitForSelector('.book-item button[title="Saved password: click to forget it"]', { timeout: 15000 });
+    await page.fill("#peer-id", id);
+    await page.click("form.card button[type=submit]");
+    await page.waitForSelector(".overlay form.box input[type=password]", { timeout: 45000 });
+    await waitFor(() => calls.some((c) => c.method === "PUT" && c.body && c.body.pw === null), 15000, "the rejected password to be removed");
+    console.log("rejected saved password: prompt shown, removed from the list");
+    console.log("SAVED PASSWORD E2E OK");
+  }
+
   // Forced update: with a minimum app build above the peer's (a stock RustDesk peer reports none),
   // the agent is refused right after the peer answers, with the update message.
   await page.route("**/config.json", async (route) => {
@@ -194,6 +251,7 @@ try {
     if (!/Signed in as CI Agent/.test(bar)) throw new Error(`Unexpected team bar: ${bar}`);
     await page.screenshot({ path: `${shots}/e2e-team.png` });
     console.log("TEAM E2E OK");
+
     teamApi.close();
   }
   await browser.close();
