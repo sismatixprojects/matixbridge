@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MatixBridge — برنامج الدعم الفني والتحكم عن بُعد | Matix</title>
-<meta name="description" content="MatixBridge برنامج التحكم بالكمبيوتر عن بُعد من Matix للدعم الفني: سريع، مشفّر، بدون تثبيت. حمّله مجاناً لـ Windows و macOS.">
+<meta name="description" content="MatixBridge برنامج التحكم بالكمبيوتر عن بُعد من Matix للدعم الفني: سريع، مشفّر، بدون تثبيت. حمّله مجاناً لـ Windows و macOS و Linux.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://matixerp.com/matixbridge/">
 <link rel="alternate" hreflang="ar" href="https://matixerp.com/matixbridge/">
 <link rel="alternate" hreflang="x-default" href="https://matixerp.com/matixbridge/">
 <meta property="og:site_name" content="Matix ERP">
 <meta property="og:title" content="MatixBridge — الدعم الفني عن بُعد من Matix">
-<meta property="og:description" content="تحكّم بأي جهاز عن بُعد في ثوانٍ. مجاني لـ Windows و macOS.">
+<meta property="og:description" content="تحكّم بأي جهاز عن بُعد في ثوانٍ. مجاني لـ Windows و macOS و Linux.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://matixerp.com/matixbridge/">
 <meta property="og:image" content="https://matixerp.com/logo-w.png">
@@ -23,7 +23,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800;900&amp;family=Sora:wght@400;600;700;800&amp;display=swap">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MatixBridge","operatingSystem":"Windows, macOS","applicationCategory":"UtilitiesApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"Sismatix Information Systems","url":"https://matixerp.com/"},"downloadUrl":"https://matixerp.com/matixbridge/#download","softwareVersion":"1.5.3"}
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"MatixBridge","operatingSystem":"Windows, macOS, Linux","applicationCategory":"UtilitiesApplication","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@type":"Organization","name":"Sismatix Information Systems","url":"https://matixerp.com/"},"downloadUrl":"https://matixerp.com/matixbridge/#download","softwareVersion":"1.5.3"}
 </script>
 <style>
 :root{
@@ -36,6 +36,7 @@
   --radius:14px;--radius-lg:22px;
   --win:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M2 4.6 10 3.5v7.8H2zm9-1.2L22 2v9.3H11zM2 12.6h8v7.9L2 19.4zm9 0h11V22l-11-1.5z'/%3E%3C/svg%3E");
   --mac:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M16.4 12.6c0-2.5 2-3.6 2.1-3.7-1.2-1.7-3-1.9-3.6-2-1.5-.2-3 .9-3.8.9-.8 0-2-.9-3.3-.9-1.7 0-3.3 1-4.2 2.5-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.3.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9-.1 0-2.8-1.1-2.8-4.2zM14 5.2c.7-.9 1.2-2 1-3.2-1 .1-2.2.7-2.9 1.6-.6.7-1.2 1.9-1 3.1 1.1.1 2.2-.6 2.9-1.5z'/%3E%3C/svg%3E");
+  --linux:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' d='M4 3h16a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zm0 4v12h16V7zm2.3 2.6 1.4-1.4 4 4-4 4-1.4-1.4 2.6-2.6zM12 15h6v2h-6z'/%3E%3C/svg%3E");
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;font-size:16px;overflow-x:hidden}
@@ -59,6 +60,8 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 /* ---------- OS icons ---------- */
 .os-ic{display:inline-block;width:46px;height:46px;background:var(--white);-webkit-mask:var(--win) center/contain no-repeat;mask:var(--win) center/contain no-repeat}
 .os-ic.mac{-webkit-mask-image:var(--mac);mask-image:var(--mac)}
+.os-ic.linux{-webkit-mask-image:var(--linux);mask-image:var(--linux)}
+.mb-help-col .mb-cmd{display:block;direction:ltr;text-align:left;font-family:ui-monospace,monospace;font-size:.74rem;margin-top:.35rem;white-space:nowrap;overflow-x:auto}
 .os-ic.sm{width:20px;height:20px;flex:none}
 .os-ic.light{background:#fff}
 
@@ -76,6 +79,7 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var
 .mb-dl:hover{transform:translateY(-2px);box-shadow:0 18px 44px rgba(6,182,212,.45),inset 0 1px 0 rgba(255,255,255,.25)}
 .mb-dl-ic{width:30px;height:30px;background:#fff;-webkit-mask:var(--win) center/contain no-repeat;mask:var(--win) center/contain no-repeat;flex:none}
 .mb-dl-ic.mac{-webkit-mask-image:var(--mac);mask-image:var(--mac)}
+.mb-dl-ic.linux{-webkit-mask-image:var(--linux);mask-image:var(--linux)}
 .mb-dl-txt{display:flex;flex-direction:column;line-height:1.35}
 .mb-dl-txt b{font-size:1.12rem;font-weight:800}
 .mb-dl-txt small{font-size:.76rem;opacity:.85;font-weight:600}
@@ -148,14 +152,14 @@ html[lang="ar"] .mb-stats-grid b{font-family:var(--ar)}
 .mb-feat p{font-size:.84rem;color:var(--text);line-height:1.75}
 
 /* ---------- DOWNLOAD ---------- */
-.mb-dl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,380px));justify-content:center;gap:1.5rem}
+.mb-dl-grid{display:grid;grid-template-columns:repeat(3,minmax(0,340px));justify-content:center;gap:1.5rem}
 .mb-dl-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius-lg);padding:2.2rem 1.8rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.6rem;transition:border-color .25s,box-shadow .25s}
 .mb-dl-card.suggested{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 20px 50px rgba(6,182,212,.15)}
 .mb-dl-card h3{font-family:var(--en);font-size:1.4rem;font-weight:800;margin-top:.4rem}
 .mb-dl-card p{color:var(--text);font-size:.85rem;margin-bottom:.6rem}
 .mb-mini{font-size:.76rem;color:var(--text2);margin-top:.4rem}
 a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
-.mb-help{display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin-top:2.4rem}
+.mb-help{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem;margin-top:2.4rem}
 .mb-help-col{background:rgba(12,29,54,.45);border:1px dashed var(--border2);border-radius:var(--radius);padding:1.4rem 1.6rem}
 .mb-help-col h4{display:flex;align-items:center;gap:.6rem;font-size:.98rem;margin-bottom:.8rem}
 .mb-help-col ol{counter-reset:s}
@@ -315,7 +319,7 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
   <div class="container mb-stats-grid">
     <div class="reveal"><b data-i18n="s1_n">ثوانٍ</b><span data-i18n="s1_t">من فتح البرنامج حتى بدء الجلسة</span></div>
     <div class="reveal"><b dir="ltr">25 MB</b><span data-i18n="s2_t">برنامج خفيف يثبت في ثوانٍ</span></div>
-    <div class="reveal"><b dir="ltr">Windows · macOS</b><span data-i18n="s3_t">نفس التجربة على أجهزة الكمبيوتر</span></div>
+    <div class="reveal"><b dir="ltr">Windows · macOS · Linux</b><span data-i18n="s3_t">نفس التجربة على أجهزة الكمبيوتر</span></div>
     <div class="reveal"><b dir="ltr">+6,000</b><span data-i18n="s4_t">شركة تثق في حلول Matix</span></div>
   </div>
 </section>
@@ -379,6 +383,12 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
         <a class="mb-dl small" id="macMain" href="/matixbridge/download/MatixBridge-macOS.dmg?v=0.9" download><span class="mb-dl-txt"><b data-i18n="mac_arm">Apple Silicon (M1–M4)</b><small dir="ltr">.dmg · 30 MB</small></span></a>
         <a class="mb-mini" id="macAlt" href="/matixbridge/download/MatixBridge-macOS-Intel.dmg?v=0.9" download data-i18n="mac_intel">جهاز Mac بمعالج Intel؟ حمّل هذه النسخة</a>
       </div>
+      <div class="mb-dl-card reveal" id="cardLinux">
+        <span class="os-ic linux"></span>
+        <h3>Linux</h3>
+        <p data-i18n="lin_req">Ubuntu 18.04 أو أحدث و Debian</p>
+        <a class="mb-dl small" id="linMain" href="/matixbridge/download/MatixBridge-Linux.deb?v=0.9" download><span class="mb-dl-txt"><b data-i18n="dl_btn">تحميل</b><small dir="ltr">.deb · 24 MB</small></span></a>
+      </div>
     </div>
 
     <!-- First-run help -->
@@ -397,6 +407,14 @@ a.mb-mini{color:var(--text);border-bottom:1px dashed var(--text2)}
           <li data-i18n="hm1">افتح ملف .dmg واسحب MatixBridge إلى مجلد Applications.</li>
           <li data-i18n="hm2">إذا منع النظام فتحه: الإعدادات ← الخصوصية والأمان ← <b>فتح على أي حال</b>.</li>
           <li data-i18n="hm3">اسمح بصلاحيتي <b>تسجيل الشاشة</b> و<b>تسهيلات الاستخدام</b> حتى يرى فريق الدعم شاشتك ويتحكم بها.</li>
+        </ol>
+      </div>
+      <div class="mb-help-col">
+        <h4><span class="os-ic linux sm"></span><span data-i18n="hl_t">أول تشغيل على Ubuntu</span></h4>
+        <ol>
+          <li data-i18n="hl1">افتح الملف بـ «تثبيت البرامج»، أو من الطرفية: <b class="mb-cmd">sudo apt install ./MatixBridge-Linux.deb</b></li>
+          <li data-i18n="hl2">افتح MatixBridge من قائمة التطبيقات. سيظهر رقم جهازك؛ أعطِه لفريق الدعم.</li>
+          <li data-i18n="hl3">على Ubuntu الحديث (Wayland) يطلب النظام موافقتك على مشاركة الشاشة عند بدء الجلسة: اختر الشاشة واضغط <b>مشاركة</b>.</li>
         </ol>
       </div>
     </div>
@@ -519,7 +537,14 @@ window.PAGE_T = {
   dl_alt_win:["متوفر أيضاً لـ Windows","Also available for Windows"],
   dl_alt_all:["اختر نظام التشغيل","Choose your system"],
   dl_any:["حمّل MatixBridge","Download MatixBridge"],
-  dl_any_meta:["مجاني · Windows و macOS","Free · Windows and macOS"],
+  dl_any_meta:["مجاني · Windows و macOS و Linux","Free · Windows, macOS and Linux"],
+  dl_linux:["تحميل لـ Linux","Download for Linux"],
+  dl_linux_meta:["مجاني · ملف ‎.deb لـ Ubuntu و Debian","Free · .deb for Ubuntu and Debian"],
+  lin_req:["Ubuntu 18.04 أو أحدث و Debian","Ubuntu 18.04 or later, and Debian"],
+  hl_t:["أول تشغيل على Ubuntu","First run on Ubuntu"],
+  hl1:["افتح الملف بـ «تثبيت البرامج»، أو من الطرفية: <b class=\"mb-cmd\">sudo apt install ./MatixBridge-Linux.deb</b>","Open the file with App Center, or in a terminal: <b class=\"mb-cmd\">sudo apt install ./MatixBridge-Linux.deb</b>"],
+  hl2:["افتح MatixBridge من قائمة التطبيقات. سيظهر رقم جهازك؛ أعطِه لفريق الدعم.","Open MatixBridge from the applications menu. Your ID appears; give it to the support team."],
+  hl3:["على Ubuntu الحديث (Wayland) يطلب النظام موافقتك على مشاركة الشاشة عند بدء الجلسة: اختر الشاشة واضغط <b>مشاركة</b>.","On recent Ubuntu (Wayland) the system asks you to approve screen sharing when a session starts: pick the screen and click <b>Share</b>."],
   tr1:["اتصال مشفّر بالكامل","Fully encrypted connection"],
   tr2:["اختصار على سطح المكتب","Desktop shortcut included"],
   tr3:["لا دخول بدون موافقتك","No access without your approval"],
@@ -587,7 +612,7 @@ window.PAGE_T = {
   q1:["هل MatixBridge مجاني؟","Is MatixBridge free?"],
   a1:["نعم. البرنامج مجاني لعملاء Matix، ويُستخدم للتواصل مع فريق الدعم الفني.","Yes. It's free for Matix customers and is used to get help from our support team."],
   q2:["هل يحتاج البرنامج تثبيتاً؟","Do I need to install it?"],
-  a2:["على Windows ثبّته مرة واحدة ليظهر على سطح المكتب وفي قائمة ابدأ، أو استخدم النسخة التي تعمل بدون تثبيت. على macOS اسحب التطبيق إلى مجلد Applications.","On Windows, install it once so it appears on the desktop and in the Start menu, or use the portable version. On macOS, drag the app into Applications."],
+  a2:["على Windows ثبّته مرة واحدة ليظهر على سطح المكتب وفي قائمة ابدأ، أو استخدم النسخة التي تعمل بدون تثبيت. على macOS اسحب التطبيق إلى مجلد Applications. على Linux ثبّت ملف ‎.deb.","On Windows, install it once so it appears on the desktop and in the Start menu, or use the portable version. On macOS, drag the app into Applications. On Linux, install the .deb file."],
   q3:["هل يستطيع فريق الدعم الدخول إلى جهازي في أي وقت؟","Can support access my computer at any time?"],
   a3:["لا. كل اتصال يحتاج موافقتك على الطلب أو كلمة مرور تعطيها أنت بنفسك. يمكنك إنهاء أي جلسة فوراً.","No. Every connection needs you to accept the request or give a password yourself, and you can end any session instantly."],
   q4:["كيف أنهي الجلسة؟","How do I end a session?"],
@@ -604,6 +629,7 @@ window.PAGE_T = {
   var plat = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
   var isMac = /Mac/i.test(plat) && !/iPhone|iPad|iPod/i.test(ua) && !(navigator.maxTouchPoints > 1);
   var isWin = /Win/i.test(plat) || /Windows/i.test(ua);
+  var isLinux = !isWin && /Linux/i.test(plat + ' ' + ua) && !/Android|CrOS/i.test(ua);
   var isMobile = /Android|iPhone|iPad|iPod/i.test(ua) || (/Mac/i.test(plat) && navigator.maxTouchPoints > 1);
   var lang = (localStorage.getItem('matix_lang') || 'ar') === 'en' ? 1 : 0;
   function setKey(el, key){ if(!el) return; el.setAttribute('data-i18n', key); el.innerHTML = window.PAGE_T[key][lang]; }
@@ -639,6 +665,13 @@ window.PAGE_T = {
     setKey(document.getElementById('dlLabel'), 'dl_any');
     setKey(document.getElementById('dlMeta'), 'dl_any_meta');
     setKey(alt, 'dl_alt_all');
+  } else if (isLinux) {
+    btn.href = '/matixbridge/download/MatixBridge-Linux.deb?v=0.9';
+    icon.className = 'mb-dl-ic linux';
+    setKey(document.getElementById('dlLabel'), 'dl_linux');
+    setKey(document.getElementById('dlMeta'), 'dl_linux_meta');
+    setKey(alt, 'dl_alt_all');
+    document.getElementById('cardLinux').classList.add('suggested');
   } else {
     if (isWin) document.getElementById('cardWin').classList.add('suggested');
   }
