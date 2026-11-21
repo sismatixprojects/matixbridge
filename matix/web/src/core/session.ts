@@ -273,8 +273,9 @@ export class Session {
               this.usingSaved = false;
               this.emit("savedRejected");
             }
-            this.emit("password", wrong);
+            // Status first: the screen draws a status over the overlay, which would hide the prompt.
             this.emit("status", wrong ? "Wrong password" : "Password required");
+            this.emit("password", wrong);
           } else {
             this.loginReject?.(new SessionError(r.error));
             this.close(r.error);
