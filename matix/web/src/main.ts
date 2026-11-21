@@ -768,12 +768,18 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     const y = display.y + ((e.clientY - r.top) / r.height) * display.height;
     return [Math.max(display.x, Math.min(display.x + display.width - 1, x)), Math.max(display.y, Math.min(display.y + display.height - 1, y))];
   }
+  // An agent on a Mac uses ⌘ where a Windows or Linux customer uses Ctrl (⌘C copies there, ⌘V pastes,
+  // ⌘A selects all, ⌘+click adds to a selection), as RustDesk's own client does. Without this the
+  // customer got the Windows/Super key, so copying from the customer's screen silently did nothing.
+  const agentIsMac = /mac/i.test((navigator as unknown as { userAgentData?: { platform?: string } }).userAgentData?.platform || navigator.platform || "");
+  const cmdIsCtrl = () => agentIsMac && os !== "macos";
+  const swapCmd = (code: string) => (!cmdIsCtrl() ? code : code === "MetaLeft" ? "ControlLeft" : code === "MetaRight" ? "ControlRight" : code);
   function modifiers(e: MouseEvent | KeyboardEvent): M.ControlKey[] {
     const m: M.ControlKey[] = [];
     if (e.altKey) m.push(M.ControlKey.Alt);
-    if (e.ctrlKey) m.push(M.ControlKey.Control);
+    if (e.ctrlKey || (e.metaKey && cmdIsCtrl())) m.push(M.ControlKey.Control);
     if (e.shiftKey) m.push(M.ControlKey.Shift);
-    if (e.metaKey) m.push(M.ControlKey.Meta);
+    if (e.metaKey && !cmdIsCtrl()) m.push(M.ControlKey.Meta);
     return m;
   }
   let lastMove = 0;
@@ -822,6 +828,7 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
   const down = new Set<string>();
   let chain = Promise.resolve();
   function sendKey(code: string, isDown: boolean) {
+    code = swapCmd(code);
     const chr = mapKey(code, os);
     if (chr === undefined) return false;
     if (code === "Pause" && os === "windows") {
@@ -836,9 +843,12 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     if (e.code === "") return;
     e.preventDefault();
     e.stopPropagation();
-    if (isDown) down.add(e.code);
-    else down.delete(e.code);
     const code = e.code;
+    // macOS browsers send no keyup for a key released while ⌘ is held, so with ⌘ down every other key
+    // is pressed and released at once; otherwise ⌘C would leave C held down on the customer's side.
+    const tapOnly = agentIsMac && e.metaKey && isDown && !/^(Meta|Control|Shift|Alt)(Left|Right)$/.test(code);
+    if (isDown && !tapOnly) down.add(code);
+    else down.delete(code);
     const pasteShortcut = isDown && code === "KeyV" && (e.ctrlKey || e.metaKey);
     chain = chain.then(async () => {
       if (pasteShortcut) {
@@ -850,7 +860,9 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
           /* no permission: paste whatever the remote clipboard holds */
         }
       }
-      if (!sendKey(code, isDown) && isDown && e.key.length === 1) session.typeText(e.key);
+      if (!sendKey(code, isDown)) {
+        if (isDown && e.key.length === 1) session.typeText(e.key);
+      } else if (tapOnly) sendKey(code, false);
     });
   }
   function releaseKeys() {
