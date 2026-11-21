@@ -14,6 +14,8 @@ Live at **https://matixerp.com/matixbridge/**. matixerp.com is a static site in 
   - `/matixbridge/download/MatixBridge-Windows.exe`: portable, x64, runs without installing.
   - `/matixbridge/download/MatixBridge-macOS.dmg`: Apple Silicon, native arm64, so no Rosetta prompt.
   - `/matixbridge/download/MatixBridge-macOS-Intel.dmg`: Intel x86_64.
+  - `/matixbridge/download/MatixBridge-Linux.deb`: Ubuntu/Debian x86_64 (since 2026-11-20). Linux visitors get it on
+    the main button.
 
   A `.htaccess` in `download/` forces `Content-Disposition: attachment`.
 
@@ -27,6 +29,7 @@ cp $D/MatixBridge-Windows-Setup.msi $D/MatixBridge-Windows-Installer.msi
 curl -fsSL -o $D/MatixBridge-Windows.exe $U/MatixBridge-<ver>-x86_64.exe
 curl -fsSL -o $D/MatixBridge-macOS.dmg $U/MatixBridge-<ver>-aarch64.dmg
 curl -fsSL -o $D/MatixBridge-macOS-Intel.dmg $U/MatixBridge-<ver>-x86_64.dmg
+curl -fsSL -o $D/MatixBridge-Linux.deb $U/MatixBridge-<ver>-x86_64.deb
 chown matixerpcom:matixerpcom $D/*
 ```
 
