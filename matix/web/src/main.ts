@@ -295,7 +295,7 @@ async function connectError(e: unknown) {
 }
 
 // ---------- password prompt ----------
-function promptPassword(overlay: HTMLElement, wrong: boolean): Promise<{ password: string; remember: boolean } | null> {
+function promptPassword(overlay: HTMLElement, wrong: boolean, waiting = false): Promise<{ password: string; remember: boolean } | null> {
   return new Promise((resolve) => {
     const input = h("input", { class: "field", type: "password", placeholder: t("Password"), autocomplete: "off" });
     const remember = rememberBox();
@@ -304,8 +304,9 @@ function promptPassword(overlay: HTMLElement, wrong: boolean): Promise<{ passwor
     const form = h(
       "form",
       { class: "box" },
-      h("h3", {}, wrong ? t("Wrong password") : t("Password required")),
-      h("p", { class: "hint" }, t("Enter the password shown on the customer's computer.")),
+      ...(waiting ? [h("div", { class: "spinner" })] : []),
+      h("h3", {}, wrong ? t("Wrong password") : waiting ? t("Waiting for the customer to accept…") : t("Password required")),
+      h("p", { class: "hint" }, waiting ? t("Or enter the device's password to log in without waiting.") : t("Enter the password shown on the customer's computer.")),
       input,
       remember.el,
       h("div", { style: "display:flex;gap:8px;justify-content:flex-end;margin-top:14px" }, cancel, ok)
@@ -495,11 +496,13 @@ async function sessionScreen(cfg: ServerConfig, peerId: string, password: string
     displaySel.value = String(pi.current_display || 0);
     statusBox(overlay, t("Connected, waiting for the picture…"));
   });
-  session.on("password", async (wrong) => {
-    const p = await promptPassword(overlay, wrong);
+  session.on("password", async (wrong, waiting) => {
+    const p = await promptPassword(overlay, wrong, waiting);
     if (p === null) session.close("Disconnected");
     else {
       remember = p.remember;
+      // The file transfer opened from this session logs in with the same password.
+      password = p.password;
       session.login(p.password);
     }
   });
@@ -1193,7 +1196,9 @@ class FilesPanel {
     this.connecting ||= (async () => {
       this.status.textContent = t("Opening file transfer…");
       const fs = new FileSession(this.peerId, this.cfg, this.agentName);
-      fs.session.on("password", async (wrong) => {
+      fs.session.on("password", async (wrong, waiting) => {
+        // No blocking prompt while the customer may still accept: it would hold every message.
+        if (waiting) return;
         const p = window.prompt(t(wrong ? "Wrong password. Password:" : "Password for file transfer:"));
         if (p === null) fs.close();
         else fs.session.login(p);

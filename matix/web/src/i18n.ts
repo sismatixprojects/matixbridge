@@ -79,6 +79,7 @@ const AR: Record<string, string> = {
   "Wrong password": "كلمة المرور غير صحيحة",
   "Password required": "كلمة المرور مطلوبة",
   "Enter the password shown on the customer's computer.": "أدخل كلمة المرور الظاهرة على جهاز العميل.",
+  "Or enter the device's password to log in without waiting.": "أو أدخل كلمة مرور الجهاز للدخول دون انتظار.",
   // session toolbar
   "Click to name this device": "اضغط لتسمية هذا الجهاز",
   "Connecting…": "جارٍ الاتصال…",

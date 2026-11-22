@@ -48,8 +48,12 @@ export interface SavedPassword {
 
 export interface SessionEvents {
   status: (text: string) => void;
-  /** The peer is waiting for a password (or the first one was wrong). */
-  password: (wrong: boolean) => void;
+  /**
+   * The peer is waiting for a password (or the first one was wrong). `waiting`: no password was
+   * sent yet, so the customer may also accept by clicking; a device set to accept by password only
+   * shows the customer no Accept button, so the prompt is offered from the start.
+   */
+  password: (wrong: boolean, waiting?: boolean) => void;
   /** The saved password was not accepted (changed, or the device's salt changed); forget it. */
   savedRejected: () => void;
   ready: (info: M.PeerInfo) => void;
@@ -260,12 +264,18 @@ export class Session {
           this.savedPw = undefined;
         }
         this.sendLogin();
-        if (!this.saltedPassword) this.emit("status", "Waiting for the customer to accept…");
+        if (!this.saltedPassword) {
+          this.emit("status", "Waiting for the customer to accept…");
+          this.emit("password", false, true);
+        }
         break;
       case "login_response": {
         const r = msg.login_response!;
         if (r.error) {
-          if (/password/i.test(r.error) && !/many|attempt/i.test(r.error)) {
+          if (/no password access/i.test(r.error)) {
+            // The device accepts by click only: a password cannot log in, so only the wait is left.
+            this.emit("status", "Waiting for the customer to accept…");
+          } else if (/password/i.test(r.error) && !/many|attempt/i.test(r.error)) {
             const wrong = /wrong/i.test(r.error);
             this.saltedPassword = undefined;
             // Tried once; never again automatically (the device locks out after repeated failures).
