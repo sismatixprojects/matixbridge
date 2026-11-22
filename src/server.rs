@@ -684,6 +684,9 @@ pub async fn start_server(is_server: bool, no_server: bool) {
             }
         }
         crate::common::set_server_running(true);
+        // A server that died with privacy mode on left the customer's screen black.
+        #[cfg(target_os = "linux")]
+        crate::privacy_mode::linux::restore_left_black();
         if !cfg!(windows) || crate::is_server() {
             std::thread::spawn(move || {
                 if let Err(err) = crate::ipc::start("") {

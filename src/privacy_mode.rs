@@ -26,6 +26,9 @@ pub mod win_topmost_window;
 #[cfg(target_os = "macos")]
 pub mod macos;
 
+#[cfg(target_os = "linux")]
+pub mod linux;
+
 #[cfg(windows)]
 mod win_virtual_display;
 #[cfg(windows)]
@@ -117,7 +120,13 @@ lazy_static::lazy_static! {
             {
                 macos::PRIVACY_MODE_IMPL.to_owned()
             }
-            #[cfg(not(target_os = "macos"))]
+            // Whether the session can use it (X11, xrandr) is checked at call time, see
+            // `is_privacy_mode_supported`.
+            #[cfg(target_os = "linux")]
+            {
+                linux::PRIVACY_MODE_IMPL.to_owned()
+            }
+            #[cfg(not(any(target_os = "macos", target_os = "linux")))]
             {
                 "".to_owned()
             }
@@ -147,6 +156,12 @@ lazy_static::lazy_static! {
         {
             map.insert(macos::PRIVACY_MODE_IMPL, |impl_key: &str| {
                 Box::new(macos::PrivacyModeImpl::new(impl_key))
+            });
+        }
+        #[cfg(target_os = "linux")]
+        {
+            map.insert(linux::PRIVACY_MODE_IMPL, |impl_key: &str| {
+                Box::new(linux::PrivacyModeImpl::new(impl_key))
             });
         }
         #[cfg(windows)]
@@ -384,7 +399,15 @@ pub fn get_supported_privacy_mode_impl() -> Vec<(&'static str, &'static str)> {
         // doesn't provide multiple modes like Windows does.
         vec![(macos::PRIVACY_MODE_IMPL, "privacy_mode_impl_macos_tip")]
     }
-    #[cfg(not(any(target_os = "windows", target_os = "macos")))]
+    #[cfg(target_os = "linux")]
+    {
+        if linux::is_supported() {
+            vec![(linux::PRIVACY_MODE_IMPL, "privacy_mode_impl_linux_tip")]
+        } else {
+            Vec::new()
+        }
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
     {
         Vec::new()
     }
@@ -436,6 +459,10 @@ pub fn check_privacy_mode_err(
 
 #[inline]
 pub fn is_privacy_mode_supported() -> bool {
+    #[cfg(target_os = "linux")]
+    if !linux::is_supported() {
+        return false;
+    }
     !DEFAULT_PRIVACY_MODE_IMPL.is_empty()
 }
 

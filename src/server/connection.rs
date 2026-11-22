@@ -1978,6 +1978,11 @@ impl Connection {
             if crate::platform::current_is_wayland() {
                 platform_additions.insert("is_wayland".into(), json!(true));
             }
+            // Empty on Wayland or without xrandr; the agent's menu reads this list.
+            platform_additions.insert(
+                "supported_privacy_mode_impl".into(),
+                json!(privacy_mode::get_supported_privacy_mode_impl()),
+            );
         }
         #[cfg(target_os = "windows")]
         {
