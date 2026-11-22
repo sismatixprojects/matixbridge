@@ -159,6 +159,24 @@ try {
   if (!saved || !saved.host) throw new Error("The connected device was not saved to the address book");
   console.log("BROWSER E2E OK");
 
+  // Password field left empty on a device that accepts by password only (its customer sees no
+  // Accept button): the wait offers the password at once, and typing it there logs in.
+  await page.goto("about:blank");
+  await page.goto(url);
+  await page.fill("#peer-id", id);
+  await page.click("form.card button[type=submit]");
+  await page.waitForSelector(".overlay form.box input[type=password]", { timeout: 45000 });
+  if (!(await page.isVisible("text=Waiting for the customer to accept"))) throw new Error("The prompt does not say the customer can still accept");
+  await page.fill(".overlay form.box input[type=password]", password);
+  await page.click(".overlay form.box button[type=submit]");
+  await page.waitForFunction(() => {
+    const c = document.querySelector("canvas");
+    return c && c.width >= 100;
+  }, null, { timeout: 45000 });
+  console.log("empty password field: prompt offered while waiting, logged in with it");
+  await page.click('button[title="Disconnect"]');
+  await page.waitForSelector("#peer-id", { timeout: 10000 });
+
   if (teamApi) {
     // Runs here, before the forced-update and ticket-launch steps: the ticket launch right after the
     // forced-update refusal is flaky on its own (the peer sometimes does not answer it for 30 s).
